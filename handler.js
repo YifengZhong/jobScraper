@@ -25,17 +25,17 @@ const respond = (code, body) => {
   };
   return response;
 };
-let getData = html => {
-  data = [];
-  const $ = cheerio.load(html);
-  $('table.itemlist tr td:nth-child(3)').each((i, elem) => {
-    data.push({
-      title: $(elem).text(),
-      link: $(elem).find('a.storylink').attr('href')
-    });
-  });
-  console.log(data);
-}
+// let getData = html => {
+//   data = [];
+//   const $ = cheerio.load(html);
+//   $('table.itemlist tr td:nth-child(3)').each((i, elem) => {
+//     data.push({
+//       title: $(elem).text(),
+//       link: $(elem).find('a.storylink').attr('href')
+//     });
+//   });
+//   console.log(data);
+// }
 module.exports.sendSMS = (event, context, callback) => {
   let receiver = "+15153055694";
   let sender = "ok";
@@ -48,21 +48,42 @@ module.exports.sendSMS = (event, context, callback) => {
     message = requestBody['message'] || "call you from schduller";
   }
 
-  const url = 'https://www.flipkart.com/';
+  const url = 'https://jobs.netflix.com/search?q=full%20stack&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California~Salt%20Lake%20City%2C%20Utah';
   const nightmare = Nightmare({ show: true });
 
   // Request making using nightmare
   nightmare
     .goto(url)
-    .wait('body')
-    .click('button._2AkmmA._29YdH8')
-    .type('input.LM6RPg', 'nodejs books')
-    .click('button.vh79eN')
-    .wait('div.bhgxx2')
+    //.wait('body')
+    // .click('button._2AkmmA._29YdH8')
+    // .type('input.LM6RPg', 'nodejs books')
+    // .click('button.vh79eN')
+    .wait('div.css-17670uj.exb5qdx0')
     .evaluate(() => document.querySelector('body').innerHTML)
     .end()
     .then(response => {
-      console.log(getData(response));
+      message = getData(response);
+      sns.publish({
+        Message: JSON.stringify(message),
+        MessageAttributes: {
+          'AWS.SNS.SMS.SMSType': {
+            DataType: 'String',
+            StringValue: 'Promotional'
+          },
+          'AWS.SNS.SMS.SenderID': {
+            DataType: 'String',
+            StringValue: sender
+          },
+        },
+        PhoneNumber: receiver
+      }).promise()
+        .then(data => {
+          callback(null, respond(200, data))
+        })
+        .catch(err => {
+          console.log("Sending failed", err);
+          callback(null, respond(500, err))
+        });
     }).catch(err => {
       console.log(err);
     });
@@ -71,10 +92,10 @@ module.exports.sendSMS = (event, context, callback) => {
   let getData = html => {
     let data = [];
     const $ = cheerio.load(html);
-    $('div._1HmYoV._35HD7C:nth-child(2) div.bhgxx2.col-12-12').each((row, raw_element) => {
-      $(raw_element).find('div div div').each((i, elem) => {
-        let title = $(elem).find('div div a:nth-child(2)').text();
-        let link = $(elem).find('div div a:nth-child(2)').attr('href');
+    $('div.css-17670uj.exb5qdx0').each((row, raw_element) => {
+      $(raw_element).find('section').each((i, elem) => {
+        let title = $(elem).find('a:nth-child(1)').text();
+        let link = $(elem).find('a:nth-child(1)').attr('href');
         if (title) {
           data.push({
             title: title,
@@ -85,26 +106,4 @@ module.exports.sendSMS = (event, context, callback) => {
     });
     return data;
   }
-  sns.publish({
-    Message: message,
-    MessageAttributes: {
-      'AWS.SNS.SMS.SMSType': {
-        DataType: 'String',
-        StringValue: 'Promotional'
-      },
-      'AWS.SNS.SMS.SenderID': {
-        DataType: 'String',
-        StringValue: sender
-      },
-    },
-    PhoneNumber: receiver
-  }).promise()
-    .then(data => {
-      console.log("1243");
-      callback(null, respond(200, data))
-    })
-    .catch(err => {
-      console.log("Sending failed", err);
-      callback(null, respond(500, err))
-    });
 }
