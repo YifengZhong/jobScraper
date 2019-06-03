@@ -25,17 +25,6 @@ const respond = (code, body) => {
   };
   return response;
 };
-// let getData = html => {
-//   data = [];
-//   const $ = cheerio.load(html);
-//   $('table.itemlist tr td:nth-child(3)').each((i, elem) => {
-//     data.push({
-//       title: $(elem).text(),
-//       link: $(elem).find('a.storylink').attr('href')
-//     });
-//   });
-//   console.log(data);
-// }
 module.exports.sendSMS = (event, context, callback) => {
   let receiver = "+15153055694";
   let sender = "ok";
@@ -64,7 +53,7 @@ module.exports.sendSMS = (event, context, callback) => {
     .then(response => {
       message = getData(response);
       sns.publish({
-        Message: JSON.stringify(message),
+        Message: formatMessage(message),
         MessageAttributes: {
           'AWS.SNS.SMS.SMSType': {
             DataType: 'String',
@@ -87,7 +76,11 @@ module.exports.sendSMS = (event, context, callback) => {
     }).catch(err => {
       console.log(err);
     });
-
+  const formatMessage = msg => {
+    return msg.map(record => {
+      return `title:${record.title}, link: https://jobs.netflix.com${record.link} `;
+    }).join(';')
+  }
   // Parsing data using cheerio
   let getData = html => {
     let data = [];
