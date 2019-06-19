@@ -5,7 +5,7 @@
   "main": "handler.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "dev": "sls offline start -s local --cacheInvalidationRegex 'node_modules'",
+    "dev": "SLS_DEBUG=* sls offline start -s local --log-level info --cacheInvalidationRegex 'node_modules'",
     "deploy": "sls deploy"
   },
   "keywords": [],
@@ -15,9 +15,11 @@
     "aws-sdk": "^2.463.0",
     "cheerio": "^1.0.0-rc.3",
     "express": "^4.17.1",
-    "nightmare": "^3.0.2",
     "serverless": "^1.43.0",
     "serverless-http": "^2.0.2",
     "serverless-offline": "^4.10.6"
+  },
+  "devDependencies": {
+    "serverless-apigw-binary": "^0.4.4"
   }
 }
