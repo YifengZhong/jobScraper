@@ -7,8 +7,8 @@ const sns = new AWS.SNS();
 
 AWS.config.update({
   region: 'us-east-1',
-  accessKeyId: 'AKIA4KMFVEJQM523BCP2',
-  secretAccessKey: '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',
+  accessKeyId: '',
+  secretAccessKey: '',
   //endpoint: new AWS.Endpoint('http://localhost:3000'),
 });
 const successResponse = (data) => {
