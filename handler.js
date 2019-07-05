@@ -5,9 +5,9 @@ const AWS = require('aws-sdk');
 const sns = new AWS.SNS();
 
 AWS.config.update({
-  region: 'us-east-1000',
-  accessKeyId: '123',
-  secretAccessKey: '123',
+  region: 'us-east-1',
+  accessKeyId: '',
+  secretAccessKey: '',
   //endpoint: new AWS.Endpoint('http://localhost:3000'),
 });
 const successResponsePdf = (data) => {
