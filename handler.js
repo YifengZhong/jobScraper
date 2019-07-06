@@ -74,10 +74,12 @@ exports.sendSMS = async (event, context) => {
   let result = null;
   try {
     const page = await browser.newPage();
-    await page.goto('https://example.com');
+    await page.goto('https://fatihunlu.github.io/vue-admin-template/#/');
     result = await page.evaluate(() => {
-      let title = document.querySelector('h1').innerText;
-      return title;
+      //let title = document.querySelector('h1').innerText;
+      let title = document.getElementsByClassName('link router-link-exact-active router-link-active')[0];
+      console.log(title.toString());
+      return title.toString();
     }
     );
   } catch (error) {

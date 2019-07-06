@@ -32,6 +32,19 @@ provider:
   apiGateway:
     restApiId: eq6aot2q6b
     restApiRootResourceId: 0gfqpu7vs0
+  iamRoleStatements:
+  - Effect: Allow
+    Action:
+      - dynamodb:Query
+      - dynamodb:Scan
+      - dynamodb:GetItem
+      - dynamodb:PutItem
+      - dynamodb:UpdateItem
+      - dynamodb:DeleteItem
+    Resource:
+      - { "Fn::GetAtt": ["scrapperjobs", "Arn" ] }  
+  environment:
+    CUSTOM_CHROME: true      
 # you can overwrite defaults here
 #  stage: dev
 #  region: us-east-1
@@ -138,3 +151,20 @@ functions:
 #     NewOutput:
 #       Description: "Description for the output"
 #       Value: "Some output value"
+resources:
+  Resources:
+    scrapperjobs:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: scrapperjobs
+        AttributeDefinitions:
+          - AttributeName: listingId
+            AttributeType: S
+        KeySchema:
+          - AttributeName: listingId
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+
+    
