@@ -79,7 +79,7 @@ exports.sendSMS = async (event, context) => {
   const browser = await puppeteerLambda.getBrowser({
     headless: true
   });
-  let result = null;
+  let todayJobs = null;
   const allJobs = {
     jobs: [{
       job: 'Donkey Feeder',
@@ -99,7 +99,7 @@ exports.sendSMS = async (event, context) => {
     await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California',
       { waitUntil: 'networkidle0' });
 
-    result = await page.evaluate(() => {
+    todayJobs = await page.evaluate(() => {
       const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
       const jbdescription = Array.from(sections).map(x => {
         const url = x.getElementsByTagName('a')[0].href;
@@ -113,18 +113,38 @@ exports.sendSMS = async (event, context) => {
     const allRecords = await dynamo.scan({
       TableName: 'scrapperjobs'
     }).promise();
-    const yesterdayJobs = allRecords.Items[0].jobs;
-    const newJob = getNewJob(yesterdayJobs, result);
-    if (newJob.length !== 0) {
+    let newJob = todayJobs;
+    if (allRecords.Items[0]) {
+      const yesterdayJobs = allRecords.Items[0].jobs;
+      newJob = getNewJob(yesterdayJobs, todayJobs);
+      // Delete old jobs
+      const jobsToDelete = allRecords.Items[0] ? allRecords.Items[0].listingId : null;
+      if (jobsToDelete) {
+        await dynamo.delete({
+          TableName: 'scrapperjobs',
+          Key: {
+            listingId: jobsToDelete
+          }
+        }).promise();
+      }
+    }
+
+
+
+    //Save new jobs
+    if (todayJobs) {
       await dynamo.put({
         TableName: 'scrapperjobs',
         Item: {
           listingId: new Date().toString(),
-          jobs: newJob
+          jobs: todayJobs
         }
       }).promise();
     }
-    return successRespond(200, res);
+    if (newJob.length !== 0) {
+      //send SMS here
+    }
+    return successRespond(200, newJob);
 
   } catch (error) {
     console.log(error);
