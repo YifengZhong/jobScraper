@@ -96,7 +96,8 @@ exports.sendSMS = async (event, context) => {
   }
   try {
     const page = await browser.newPage();
-    await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California');
+    await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California',
+      { waitUntil: 'networkidle0' });
 
     result = await page.evaluate(() => {
       const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
@@ -109,18 +110,20 @@ exports.sendSMS = async (event, context) => {
       return jbdescription;
     })
     const dynamo = new AWS.DynamoDB.DocumentClient()
-    // const allRecords = await dynamo.scan({
-    //   TableName: 'scrapperjobs'
-    // }).promise();
-    // const yesterdayJobs = allRecords.Items[0].jobs;
-    // const newJob = getNewJob(yesterdayJobs, result);
-    const res = await dynamo.put({
-      TableName: 'scrapperjobs',
-      Item: {
-        listingId: new Date().toString(),
-        jobs: result//newJob
-      }
+    const allRecords = await dynamo.scan({
+      TableName: 'scrapperjobs'
     }).promise();
+    const yesterdayJobs = allRecords.Items[0].jobs;
+    const newJob = getNewJob(yesterdayJobs, result);
+    if (newJob.length !== 0) {
+      await dynamo.put({
+        TableName: 'scrapperjobs',
+        Item: {
+          listingId: new Date().toString(),
+          jobs: newJob
+        }
+      }).promise();
+    }
     return successRespond(200, res);
 
   } catch (error) {
