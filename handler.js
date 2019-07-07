@@ -93,30 +93,35 @@ exports.sendSMS = async (event, context) => {
   }
   try {
     const page = await browser.newPage();
-    await page.goto('https://fatihunlu.github.io/vue-admin-template/#/');
+    await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California');
 
     result = await page.evaluate(() => {
-      let title = document.getElementsByClassName('link router-link-exact-active router-link-active')[0];
-      console.log(title.toString());
-      return title.toString();
+      //let title = document.getElementsByClassName('link router-link-exact-active router-link-active')[0];
+      sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
+      let titles = Array.from(sections).map(x => x.getElementsByTagName('h4')[0].innerText)
+      console.log(titles);
+      return titles;
     })
+    const dynamo = new AWS.DynamoDB.DocumentClient()
+    dynamo.put({
+      TableName: 'scrapperjobs',
+      Item: {
+        listingId: new Date().toString(),
+        jobs: JSON.stringify(result)
+      }
+    }).promise()
+      .then(() => {
+        console.log("write succeed")
+        return successRespond(200, result);
+      });
+
   } catch (error) {
     console.log(error);
     return errorResponse(500, error);
   } finally {
     await browser.close();
   }
-  const dynamo = new AWS.DynamoDB.DocumentClient()
-  dynamo.put({
-    TableName: 'scrapperjobs',
-    Item: {
-      listingId: new Date().toString(),
-      jobs: result
-    }
-  }).promise()
-    .then(() => console.log("write succeed"));
 
-  return successRespond(200, result);
 }
 // module.exports.sendSMS = (event, context, callback) => {
 
