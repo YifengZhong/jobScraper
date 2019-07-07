@@ -69,7 +69,10 @@ module.exports.hello = (event, context, callback) => {
     return errorResponse(500, 'Error Fetching Grower');
   }
 };
-
+function getNewJob(yesterdayJobs, result) {
+  const yesterdayJobsUrl = yesterdayJobs.map(job => job.url);
+  return result.filter(job => !yesterdayJobsUrl.includes(job.url));
+}
 exports.sendSMS = async (event, context) => {
   const puppeteerLambda = require('puppeteer-lambda');
   console.log('before getBrowser');
@@ -96,24 +99,29 @@ exports.sendSMS = async (event, context) => {
     await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California');
 
     result = await page.evaluate(() => {
-      //let title = document.getElementsByClassName('link router-link-exact-active router-link-active')[0];
-      sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
-      let titles = Array.from(sections).map(x => x.getElementsByTagName('h4')[0].innerText)
-      console.log(titles);
-      return titles;
+      const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
+      const jbdescription = Array.from(sections).map(x => {
+        const url = x.getElementsByTagName('a')[0].href;
+        const title = x.getElementsByTagName('h4')[0].innerText;
+        return { title, url };
+      })
+      console.log(jbdescription);
+      return jbdescription;
     })
     const dynamo = new AWS.DynamoDB.DocumentClient()
-    dynamo.put({
+    // const allRecords = await dynamo.scan({
+    //   TableName: 'scrapperjobs'
+    // }).promise();
+    // const yesterdayJobs = allRecords.Items[0].jobs;
+    // const newJob = getNewJob(yesterdayJobs, result);
+    const res = await dynamo.put({
       TableName: 'scrapperjobs',
       Item: {
         listingId: new Date().toString(),
-        jobs: JSON.stringify(result)
+        jobs: result//newJob
       }
-    }).promise()
-      .then(() => {
-        console.log("write succeed")
-        return successRespond(200, result);
-      });
+    }).promise();
+    return successRespond(200, res);
 
   } catch (error) {
     console.log(error);
