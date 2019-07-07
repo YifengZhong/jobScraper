@@ -6,7 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "SLS_DEBUG=* sls offline start -s local --log-level info --cacheInvalidationRegex 'node_modules'",
-    "deploy": "sls deploy"
+    "deploy": "sls deploy",
+    "installDB": "sls dynamodb install",
+    "localDB": "sls dynamodb start --migrate"
   },
   "keywords": [],
   "author": "",

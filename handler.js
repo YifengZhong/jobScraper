@@ -3,13 +3,18 @@ const AWS = require('aws-sdk');
 // const chrome = require('chrome-aws-lambda');
 // const puppeteer = require('puppeteer-core');
 const sns = new AWS.SNS();
-
-AWS.config.update({
-  region: 'us-east-1',
-  accessKeyId: '',
-  secretAccessKey: '',
-  //endpoint: new AWS.Endpoint('http://localhost:3000'),
-});
+const dynamo = new AWS.DynamoDB.DocumentClient(
+  //   {
+  //   region: 'localhost',
+  //   endpoint: 'http://localhost:8000'
+  // }
+)
+// AWS.config.update({
+//   region: 'us-east-1',
+//   accessKeyId: '',
+//   secretAccessKey: '',
+//   //endpoint: new AWS.Endpoint('http://localhost:3000'),
+// });
 const successResponsePdf = (data) => {
   return {
     statusCode: 200,
@@ -66,30 +71,96 @@ module.exports.hello = (event, context, callback) => {
 };
 
 exports.sendSMS = async (event, context) => {
-  const puppeteerLambda = require('puppeteer-lambda');
+  //  const puppeteerLambda = require('puppeteer-lambda');
   console.log('before getBrowser');
-  const browser = await puppeteerLambda.getBrowser({
-    headless: true
-  });
-  let result = null;
-  try {
-    const page = await browser.newPage();
-    await page.goto('https://fatihunlu.github.io/vue-admin-template/#/');
-    result = await page.evaluate(() => {
-      //let title = document.querySelector('h1').innerText;
-      let title = document.getElementsByClassName('link router-link-exact-active router-link-active')[0];
-      console.log(title.toString());
-      return title.toString();
+  // const browser = await puppeteerLambda.getBrowser({
+  //   headless: true
+  // });
+  // let result = null;
+  const allJobs = {
+    jobs: [{
+      job: 'Donkey Feeder',
+      closing: 'Fri Jul 21 2017 00:00:00 GMT+0100',
+      location: 'Leeds, UK'
+    },
+    {
+      job: 'Chef',
+      closing: 'Fri Jul 21 2017 00:00:00 GMT+0100',
+      location: 'Sheffield, UK'
     }
-    );
+    ],
+    listingId: 'Fri Jul 21 2017 14:25:35 GMT+0100 (BST)'
+  }
+  try {
+    // const page = await browser.newPage();
+    // await page.goto('https://fatihunlu.github.io/vue-admin-template/#/');
+    const dynamo = new AWS.DynamoDB.DocumentClient(
+      //   {
+      //   region: 'localhost',
+      //   endpoint: 'http://localhost:8000'
+      // }
+    )
+    dynamo.put({
+      TableName: 'scrapperjobs',
+      Item: {
+        listingId: new Date().toString(),
+        jobs: allJobs
+      }
+    }).promise()
+      .then(() => console.log("write succeed"));
+    //result = await page.evaluate(() => {
+    // let title = document.getElementsByClassName('link router-link-exact-active router-link-active')[0];
+    // console.log(title.toString());
+    // return title.toString();
+
+    //extractListingsFromHTML(data);
+
+    // Retrieve yesterday's jobs
+    //const dynamo = new AWS.DynamoDB.DocumentClient(
+    //   {
+    //   region: 'localhost',
+    //   endpoint: 'http://localhost:8000'
+    // }
+    //)
+    // dynamo.put({
+    //   TableName: 'scrapperjobs',
+    //   Item: {
+    //     listingId: new Date().toString(),
+    //     jobs: allJobs
+    //   }
+    // }).promise()
+    //   .then(() => console.log("write succeed"));
+
+    // .then(response => {
+    //   // Figure out which jobs are new
+    //   let yesterdaysJobs = response.Items[0] ? response.Items[0].jobs : [];
+
+    //   newJobs = differenceWith(allJobs, yesterdaysJobs, isEqual);
+
+    //   // Get the ID of yesterday's jobs which can now be deleted
+    //   const jobsToDelete = response.Items[0] ? response.Items[0].listingId : null;
+
+    //   // Delete old jobs
+    //   if (jobsToDelete) {
+    //     return dynamo.delete({
+    //       TableName: 'donkeyjobs',
+    //       Key: {
+    //         listingId: jobsToDelete
+    //       }
+    //     }).promise();
+    //   } else return;
+    //})
+
+    //    }
+
   } catch (error) {
     console.log(error);
     return errorResponse(500, error);
   } finally {
-    await browser.close();
+    //await browser.close();
   }
   return successRespond(200, result);
-};
+}
 // module.exports.sendSMS = (event, context, callback) => {
 
 //   let url = 'https://' + 'www.google.com';
