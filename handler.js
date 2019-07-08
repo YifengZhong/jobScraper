@@ -143,62 +143,30 @@ exports.sendSMS = async (event, context) => {
     }
     if (newJob.length !== 0) {
       //send SMS here
+      let receiver = "+15153055694";
+      let sender = "aws";
+      let message = newJob;
+      console.log("Sending message", message, "to receiver", receiver);
+      await sns.publish({
+        Message: JSON.stringify(message),
+        MessageAttributes: {
+          'AWS.SNS.SMS.SMSType': {
+            DataType: 'String',
+            StringValue: 'Promotional'
+          },
+          'AWS.SNS.SMS.SenderID': {
+            DataType: 'String',
+            StringValue: sender
+          },
+        },
+        PhoneNumber: receiver
+      }).promise();
     }
     return successRespond(200, newJob);
-
   } catch (error) {
     console.log(error);
     return errorResponse(500, error);
   } finally {
     await browser.close();
   }
-
 }
-// module.exports.sendSMS = (event, context, callback) => {
-
-//   let url = 'https://' + 'www.google.com';
-//   // if (!url.startsWith('http')) {
-//   //     url = 'https://' + 'www.google.com'; // add protocol if missing
-//   // }
-//   getScreenshot(url, 'png')
-//     .promise()
-//     .then(file => callback(null, successResponseImg(file.toString('base64'))))
-//     .catch(e => {
-//       console.log(e);
-//     });
-//   return;
-// };
-  // let receiver = "+15153055694";
-  // let sender = "ok";
-  // let message = "call you from schduler";
-  // console.log(event.body);
-  // if (event.body) {
-  //   const requestBody = JSON.parse(event.body);
-  //   receiver = requestBody['receiver'] || "+15153055694";
-  //   sender = requestBody['sender'] || "ok";
-  //   message = requestBody['message'] || "call you from schduller";
-  // }
-  // console.log("Sending message", message, "to receiver", receiver);
-  // sns.publish({
-  //   Message: message,
-  //   MessageAttributes: {
-  //     'AWS.SNS.SMS.SMSType': {
-  //       DataType: 'String',
-  //       StringValue: 'Promotional'
-  //     },
-  //     'AWS.SNS.SMS.SenderID': {
-  //       DataType: 'String',
-  //       StringValue: sender
-  //     },
-  //   },
-  //   PhoneNumber: receiver
-  // }).promise()
-  //   .then(data => {
-  //     console.log("1243");
-  //     callback(null, respond(200, data))
-  //   })
-  //   .catch(err => {
-  //     console.log("Sending failed", err);
-  //     callback(null, respond(500, err))
-  //   });
-//}
