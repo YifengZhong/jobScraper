@@ -95,10 +95,11 @@ exports.sendSMS = async (event, context) => {
     listingId: 'Fri Jul 21 2017 14:25:35 GMT+0100 (BST)'
   }
   try {
+    console.log('before newPage');
     const page = await browser.newPage();
     await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California',
       { waitUntil: 'networkidle0' });
-
+    console.log('before evaluate');
     todayJobs = await page.evaluate(() => {
       const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
       const jbdescription = Array.from(sections).map(x => {
@@ -109,6 +110,7 @@ exports.sendSMS = async (event, context) => {
       console.log(jbdescription);
       return jbdescription;
     })
+    console.log('before dynamo');
     const dynamo = new AWS.DynamoDB.DocumentClient()
     const allRecords = await dynamo.scan({
       TableName: 'scrapperjobs'
@@ -128,9 +130,7 @@ exports.sendSMS = async (event, context) => {
         }).promise();
       }
     }
-
-
-
+    console.log('before todayJobs');
     //Save new jobs
     if (todayJobs) {
       await dynamo.put({

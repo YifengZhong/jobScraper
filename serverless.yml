@@ -60,7 +60,7 @@ provider:
     Resource:
       - { "Fn::GetAtt": ["scrapperjobs", "Arn" ] }  
   environment:
-    #CUSTOM_CHROME: true      
+    CUSTOM_CHROME: true      
 # you can overwrite defaults here
 #  stage: dev
 #  region: us-east-1
