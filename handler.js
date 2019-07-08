@@ -1,20 +1,6 @@
 'use strict';
 const AWS = require('aws-sdk');
-// const chrome = require('chrome-aws-lambda');
-// const puppeteer = require('puppeteer-core');
 const sns = new AWS.SNS();
-const dynamo = new AWS.DynamoDB.DocumentClient(
-  //   {
-  //   region: 'localhost',
-  //   endpoint: 'http://localhost:8000'
-  // }
-)
-// AWS.config.update({
-//   region: 'us-east-1',
-//   accessKeyId: '',
-//   secretAccessKey: '',
-//   //endpoint: new AWS.Endpoint('http://localhost:3000'),
-// });
 const successResponsePdf = (data) => {
   return {
     statusCode: 200,
@@ -143,12 +129,15 @@ exports.sendSMS = async (event, context) => {
     }
     if (newJob.length !== 0) {
       //send SMS here
-      let receiver = "+15153055694";
-      let sender = "aws";
-      let message = newJob;
+      const receiver = "+15153055694";
+      const sender = "aws";
+      const normalizedJobs = newJob.map((job, index) => {
+        return `${index}. title:${job.title}.\nURL: ${job.url}.`;
+      })
+      const message = normalizedJobs.join('\n\n');
       console.log("Sending message", message, "to receiver", receiver);
       await sns.publish({
-        Message: JSON.stringify(message),
+        Message: message,
         MessageAttributes: {
           'AWS.SNS.SMS.SMSType': {
             DataType: 'String',
