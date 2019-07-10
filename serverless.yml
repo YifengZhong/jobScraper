@@ -112,7 +112,7 @@ functions:
     events:
     - schedule:
         name: JobScrapperScheduler
-        rate: rate(1 day)
+        rate: cron(0 11 * * ? *)
         enabled: true
         input:
           receiver: "+15153055694"
