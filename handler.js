@@ -72,29 +72,46 @@ exports.sendSMS = async (event, context) => {
     const page = await browser.newPage();
     await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California',
       { waitUntil: 'networkidle0' });
-    console.log('before evaluate');
-    const jb1 = await page.evaluate(() => {
-      const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
-      const jb1 = Array.from(sections).map(x => {
-        const url = x.getElementsByTagName('a')[0].href;
-        const title = x.getElementsByTagName('h4')[0].innerText;
-        return { title, url };
+    let hasNext = true;
+    let todayJb = [];
+    while (hasNext) {
+      const jb1 = await page.evaluate(() => {
+        const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
+        const jb1 = Array.from(sections).map(x => {
+          const url = x.getElementsByTagName('a')[0].href;
+          const title = x.getElementsByTagName('h4')[0].innerText;
+          return { title, url };
+        });
+        hasNext = document.querySelector('#__next > div > main > section > div > div > div > div > div.css-v8ggj5.e1j2lb9k1 > div.css-1l4w6pd.e1wiielh2 > div > a:nth-child(3)');
+        if (hasNext) {
+          hasNext.click();
+        }
+        return jb1;
       });
-      //parseDoc();
-      document.querySelector('#__next > div > main > section > div > div > div > div > div.css-v8ggj5.e1j2lb9k1 > div.css-1l4w6pd.e1wiielh2 > div > a:nth-child(3)').click();
-      return jb1;
-    });
-    await page.waitForNavigation({ timeout: 30000, waitUntil: 'networkidle0' });
-    const jb2 = await page.evaluate(() => {
-      const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
-      const jb2 = Array.from(sections).map(x => {
-        const url = x.getElementsByTagName('a')[0].href;
-        const title = x.getElementsByTagName('h4')[0].innerText;
-        return { title, url };
-      });
-      return jb2;
-    });
-    const todayJb = [...jb1, ...jb2];
+      todayJb = [...todayJb, ...jb1];
+      await page.waitForNavigation({ timeout: 30000, waitUntil: 'networkidle0' });
+    }
+    // const jb1 = await page.evaluate(() => {
+    //   const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
+    //   const jb1 = Array.from(sections).map(x => {
+    //     const url = x.getElementsByTagName('a')[0].href;
+    //     const title = x.getElementsByTagName('h4')[0].innerText;
+    //     return { title, url };
+    //   });
+    //   document.querySelector('#__next > div > main > section > div > div > div > div > div.css-v8ggj5.e1j2lb9k1 > div.css-1l4w6pd.e1wiielh2 > div > a:nth-child(3)').click();
+    //   return jb1;
+    // });
+    // await page.waitForNavigation({ timeout: 30000, waitUntil: 'networkidle0' });
+    // const jb2 = await page.evaluate(() => {
+    //   const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
+    //   const jb2 = Array.from(sections).map(x => {
+    //     const url = x.getElementsByTagName('a')[0].href;
+    //     const title = x.getElementsByTagName('h4')[0].innerText;
+    //     return { title, url };
+    //   });
+    //   return jb2;
+    // });
+    //const todayJb = [...jb1, ...jb2];
 
     console.log('before dynamo');
     const dynamo = new AWS.DynamoDB.DocumentClient()
