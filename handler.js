@@ -59,52 +59,52 @@ function getNewJob(yesterdayJobs, result) {
   const yesterdayJobsUrl = yesterdayJobs.map(job => job.url);
   return result.filter(job => !yesterdayJobsUrl.includes(job.url));
 }
+
 exports.sendSMS = async (event, context) => {
   const puppeteerLambda = require('puppeteer-lambda');
   console.log('before getBrowser');
   const browser = await puppeteerLambda.getBrowser({
     headless: true
   });
-  let todayJobs = null;
-  const allJobs = {
-    jobs: [{
-      job: 'Donkey Feeder',
-      closing: 'Fri Jul 21 2017 00:00:00 GMT+0100',
-      location: 'Leeds, UK'
-    },
-    {
-      job: 'Chef',
-      closing: 'Fri Jul 21 2017 00:00:00 GMT+0100',
-      location: 'Sheffield, UK'
-    }
-    ],
-    listingId: 'Fri Jul 21 2017 14:25:35 GMT+0100 (BST)'
-  }
+
   try {
     console.log('before newPage');
     const page = await browser.newPage();
     await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California',
       { waitUntil: 'networkidle0' });
     console.log('before evaluate');
-    todayJobs = await page.evaluate(() => {
+    const jb1 = await page.evaluate(() => {
       const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
-      const jbdescription = Array.from(sections).map(x => {
+      const jb1 = Array.from(sections).map(x => {
         const url = x.getElementsByTagName('a')[0].href;
         const title = x.getElementsByTagName('h4')[0].innerText;
         return { title, url };
-      })
-      console.log(jbdescription);
-      return jbdescription;
-    })
+      });
+      //parseDoc();
+      document.querySelector('#__next > div > main > section > div > div > div > div > div.css-v8ggj5.e1j2lb9k1 > div.css-1l4w6pd.e1wiielh2 > div > a:nth-child(3)').click();
+      return jb1;
+    });
+    await page.waitForNavigation({ timeout: 30000, waitUntil: 'networkidle0' });
+    const jb2 = await page.evaluate(() => {
+      const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
+      const jb2 = Array.from(sections).map(x => {
+        const url = x.getElementsByTagName('a')[0].href;
+        const title = x.getElementsByTagName('h4')[0].innerText;
+        return { title, url };
+      });
+      return jb2;
+    });
+    const todayJb = [...jb1, ...jb2];
+
     console.log('before dynamo');
     const dynamo = new AWS.DynamoDB.DocumentClient()
     const allRecords = await dynamo.scan({
       TableName: 'scrapperjobs'
     }).promise();
-    let newJob = todayJobs;
+    let newJob = todayJb;
     if (allRecords.Items[0]) {
       const yesterdayJobs = allRecords.Items[0].jobs;
-      newJob = getNewJob(yesterdayJobs, todayJobs);
+      newJob = getNewJob(yesterdayJobs, todayJb);
       // Delete old jobs
       const jobsToDelete = allRecords.Items[0] ? allRecords.Items[0].listingId : null;
       if (jobsToDelete) {
@@ -116,14 +116,14 @@ exports.sendSMS = async (event, context) => {
         }).promise();
       }
     }
-    console.log('before todayJobs');
+    console.log('before todayJb');
     //Save new jobs
-    if (todayJobs) {
+    if (todayJb) {
       await dynamo.put({
         TableName: 'scrapperjobs',
         Item: {
           listingId: new Date().toString(),
-          jobs: todayJobs
+          jobs: todayJb
         }
       }).promise();
     }
