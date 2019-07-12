@@ -68,24 +68,31 @@ exports.sendSMS = async (event, context) => {
   });
 
   try {
-    console.log('before newPage');
+    console.log('before newPage1');
     const page = await browser.newPage();
     await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California',
       { waitUntil: 'networkidle0' });
+    console.log('after newPage1');
     let hasNext = true;
     let todayJb = [];
     while (hasNext) {
+      console.log('Befroe evaluate');
       const jb1 = await page.evaluate(() => {
+        console.log("evaluate");
         const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
         const jb1 = Array.from(sections).map(x => {
           const url = x.getElementsByTagName('a')[0].href;
           const title = x.getElementsByTagName('h4')[0].innerText;
           return { title, url };
         });
-        hasNext = document.querySelector('#__next > div > main > section > div > div > div > div > div.css-v8ggj5.e1j2lb9k1 > div.css-1l4w6pd.e1wiielh2 > div > a:nth-child(3)');
-        if (hasNext) {
-          hasNext.click();
+        console.log(jb1);
+        const nextHref = document.querySelector('#__next > div > main > section > div > div > div > div > div.css-v8ggj5.e1j2lb9k1 > div.css-1l4w6pd.e1wiielh2 > div > a:nth-child(3)');
+        if (nextHref.getAttribute('href')) {
+          nextHref.click();
+        } else {
+          hasNext = false;
         }
+        console.log(nextHref.getAttribute('href'));
         return jb1;
       });
       todayJb = [...todayJb, ...jb1];
