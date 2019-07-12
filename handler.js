@@ -73,52 +73,36 @@ exports.sendSMS = async (event, context) => {
     await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California',
       { waitUntil: 'networkidle0' });
     console.log('after newPage1');
-    let hasNext = true;
+
     let todayJb = [];
-    while (hasNext) {
+    while (true) {
       console.log('Befroe evaluate');
-      const jb1 = await page.evaluate(() => {
-        console.log("evaluate");
+      const obj = await page.evaluate(() => {
+        //From here there is no log output
         const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
         const jb1 = Array.from(sections).map(x => {
           const url = x.getElementsByTagName('a')[0].href;
           const title = x.getElementsByTagName('h4')[0].innerText;
           return { title, url };
         });
-        console.log(jb1);
+        let hasNextInternal = true;
         const nextHref = document.querySelector('#__next > div > main > section > div > div > div > div > div.css-v8ggj5.e1j2lb9k1 > div.css-1l4w6pd.e1wiielh2 > div > a:nth-child(3)');
         if (nextHref.getAttribute('href')) {
           nextHref.click();
         } else {
-          hasNext = false;
+          hasNextInternal = false;
         }
-        console.log(nextHref.getAttribute('href'));
-        return jb1;
+        return { jb1, hasNextInternal };
+        //untill here no log output
       });
-      todayJb = [...todayJb, ...jb1];
-      await page.waitForNavigation({ timeout: 30000, waitUntil: 'networkidle0' });
+      todayJb = [...todayJb, ...obj.jb1];
+      console.log('hasNextInternal', obj.hasNextInternal)
+      if (obj.hasNextInternal) {
+        await page.waitForNavigation({ timeout: 30000, waitUntil: 'networkidle0' });
+      } else {
+        break;
+      }
     }
-    // const jb1 = await page.evaluate(() => {
-    //   const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
-    //   const jb1 = Array.from(sections).map(x => {
-    //     const url = x.getElementsByTagName('a')[0].href;
-    //     const title = x.getElementsByTagName('h4')[0].innerText;
-    //     return { title, url };
-    //   });
-    //   document.querySelector('#__next > div > main > section > div > div > div > div > div.css-v8ggj5.e1j2lb9k1 > div.css-1l4w6pd.e1wiielh2 > div > a:nth-child(3)').click();
-    //   return jb1;
-    // });
-    // await page.waitForNavigation({ timeout: 30000, waitUntil: 'networkidle0' });
-    // const jb2 = await page.evaluate(() => {
-    //   const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
-    //   const jb2 = Array.from(sections).map(x => {
-    //     const url = x.getElementsByTagName('a')[0].href;
-    //     const title = x.getElementsByTagName('h4')[0].innerText;
-    //     return { title, url };
-    //   });
-    //   return jb2;
-    // });
-    //const todayJb = [...jb1, ...jb2];
 
     console.log('before dynamo');
     const dynamo = new AWS.DynamoDB.DocumentClient()
