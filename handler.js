@@ -62,21 +62,17 @@ function getNewJob(yesterdayJobs, result) {
 
 exports.sendSMS = async (event, context) => {
   const puppeteerLambda = require('puppeteer-lambda');
-  console.log('before getBrowser');
   const browser = await puppeteerLambda.getBrowser({
     headless: true
   });
 
   try {
-    console.log('before newPage1');
     const page = await browser.newPage();
     await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California',
       { waitUntil: 'networkidle0' });
-    console.log('after newPage1');
 
     let todayJb = [];
     while (true) {
-      console.log('Befroe evaluate');
       const obj = await page.evaluate(() => {
         //From here there is no log output
         const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
@@ -107,58 +103,61 @@ exports.sendSMS = async (event, context) => {
     console.log('before dynamo');
     const dynamo = new AWS.DynamoDB.DocumentClient()
     const allRecords = await dynamo.scan({
-      TableName: 'scrapperjobs'
+      TableName: 'scrapperjobs',
+      Key: {
+        listingId: 'Netflix'
+      }
     }).promise();
     let newJob = todayJb;
     if (allRecords.Items[0]) {
       const yesterdayJobs = allRecords.Items[0].jobs;
       newJob = getNewJob(yesterdayJobs, todayJb);
       // Delete old jobs
-      const jobsToDelete = allRecords.Items[0] ? allRecords.Items[0].listingId : null;
-      if (jobsToDelete) {
-        await dynamo.delete({
-          TableName: 'scrapperjobs',
-          Key: {
-            listingId: jobsToDelete
-          }
-        }).promise();
-      }
+      // const jobsToDelete = allRecords.Items[0] ? allRecords.Items[0].listingId : null;
+      // if (jobsToDelete) {
+      await dynamo.delete({
+        TableName: 'scrapperjobs',
+        Key: {
+          listingId: 'Netflix'
+        }
+      }).promise();
+      // }
     }
-    console.log('before todayJb');
     //Save new jobs
     if (todayJb) {
       await dynamo.put({
         TableName: 'scrapperjobs',
         Item: {
-          listingId: new Date().toString(),
+          listingId: 'Netflix',
           jobs: todayJb
         }
       }).promise();
     }
-    if (newJob.length !== 0) {
-      //send SMS here
-      const receiver = "+15153055694";
-      const sender = "aws";
-      const normalizedJobs = newJob.map((job, index) => {
-        return `${index}. title:${job.title}.\nURL: ${job.url}.`;
-      })
-      const message = normalizedJobs.join('\n\n');
-      console.log("Sending message", message, "to receiver", receiver);
-      await sns.publish({
-        Message: message,
-        MessageAttributes: {
-          'AWS.SNS.SMS.SMSType': {
-            DataType: 'String',
-            StringValue: 'Promotional'
-          },
-          'AWS.SNS.SMS.SenderID': {
-            DataType: 'String',
-            StringValue: sender
-          },
+    //if (newJob.length !== 0) {
+    //send SMS here
+    const receiver = "+15153055694";
+    const sender = "aws";
+    const normalizedJobs = newJob.map((job, index) => {
+      return `${index}. title:${job.title}.\nURL: ${job.url}.`;
+    })
+
+    const message = `Today has ${todayJb.length} positions. new jobs are:\n\n${normalizedJobs.join('\n\n')}`;
+    console.log("Sending message", message, "to receiver", receiver);
+    await sns.publish({
+      Message: message,
+      MessageAttributes: {
+        'AWS.SNS.SMS.SMSType': {
+          DataType: 'String',
+          StringValue: 'Promotional'
         },
-        PhoneNumber: receiver
-      }).promise();
-    }
+        'AWS.SNS.SMS.SenderID': {
+          DataType: 'String',
+          StringValue: sender
+        },
+      },
+      PhoneNumber: receiver
+    }).promise();
+    //}
     return successRespond(200, newJob);
   } catch (error) {
     console.log(error);
