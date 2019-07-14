@@ -31,6 +31,9 @@ const errorResponse = (statusCode, message) => {
     }),
   };
 };
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 exports.entry = async (event, context) => {
   const puppeteerLambda = require('puppeteer-lambda');
   const browser = await puppeteerLambda.getBrowser({
@@ -39,34 +42,36 @@ exports.entry = async (event, context) => {
 
   try {
     const page = await browser.newPage();
-    await page.goto('https://careers.google.com/jobs/results/?company=Google&company=Google%20Fiber&company=YouTube&employment_type=FULL_TIME&location=United%20States&q=Software%20Engineer,%20Software%20Developer&skills=javascript',
+    await page.goto('https://careers.zillowgroup.com/List-Jobs/keyword/Javascript',
       { waitUntil: 'networkidle0' });
 
     let todayJb = [];
     while (true) {
       const obj = await page.evaluate(() => {
         //From here there is no log output
-        const searchResult = document.querySelector('#search-results');
-        const sections = searchResult.getElementsByClassName('gc-card');
-        const jb1 = Array.from(sections).map(x => {
-          const url = x.href;
-          const title = x.getElementsByClassName('gc-card__title gc-heading gc-heading--beta')[0].innerText.trim();
-          return { title, url };
-        });
+        const searchResults = document.querySelectorAll('tr');
+        const jb1 = Array.from(searchResults)
+        const jobs = [];
+        for (let i = 1; i < jb1.length; i++) {
+          const title = jb1[i].querySelector('.JobTitle-cell').innerText.trim();
+          const url = jb1[i].querySelector('.JobTitle-cell > a').href;
+          jobs.push({ title, url });
+        }
         let hasNextInternal = true;
-        const nextHref = document.querySelector('#jump-content > div.gc-l-split > main > div.gc-p-results.gc-h-flex > div:nth-child(3) > div > div > div > a:nth-child(2)');
-        if (nextHref && nextHref.style.display !== 'none') {
-          //nextHref.click();
+        const nextHref = document.querySelector('#jobGrid0 > div.k-pager-wrap.k-grid-pager.k-widget.k-floatwrap > a:nth-child(4)');
+        const style = nextHref.className;
+        if (style && !style.includes("disabled")) {
+          nextHref.click();
         } else {
           hasNextInternal = false;
         }
-        return { jb1, hasNextInternal, url: nextHref.href };
+        return { jobs, hasNextInternal, next: nextHref };
         //untill here no log output
       });
-      todayJb = [...todayJb, ...obj.jb1];
+      todayJb = [...todayJb, ...obj.jobs];
+      console.log(todayJb);
       if (obj.hasNextInternal) {
-        await page.goto(obj.url,
-          { waitUntil: 'networkidle0' });
+        await sleep(3000);
       } else {
         break;
       }
@@ -80,7 +85,7 @@ exports.entry = async (event, context) => {
         "#listingId": "listingId",
       },
       ExpressionAttributeValues: {
-        ":eq": 'Google'
+        ":eq": 'Zillow'
       }
     }).promise();
     let newJob = todayJb;
@@ -93,7 +98,7 @@ exports.entry = async (event, context) => {
       await dynamo.delete({
         TableName: 'scrapperjobs',
         Key: {
-          listingId: 'Google'
+          listingId: 'Zillow'
         }
       }).promise();
       // }
@@ -103,7 +108,7 @@ exports.entry = async (event, context) => {
       await dynamo.put({
         TableName: 'scrapperjobs',
         Item: {
-          listingId: 'Google',
+          listingId: 'Zillow',
           jobs: todayJb
         }
       }).promise();
@@ -116,7 +121,7 @@ exports.entry = async (event, context) => {
       return `${index}. title:${job.title}.\nURL: ${job.url}.`;
     })
 
-    const message = `Today Google has ${todayJb.length} positions. new jobs are:\n\n${normalizedJobs.join('\n\n')}`;
+    const message = `Today Zillow has ${todayJb.length} positions. new jobs are:\n\n${normalizedJobs.join('\n\n')}`;
     console.log("Sending message", message, "to receiver", receiver);
     await sns.publish({
       Message: message,

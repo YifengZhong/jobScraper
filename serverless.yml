@@ -89,7 +89,25 @@ functions:
     - http:
         method: POST
         path: /google
-        cors: true        
+        cors: true  
+  Zillow:
+    handler: zillow.entry
+    memorySize: 1024
+    timeout: 30
+    tags:
+    events:
+    - schedule:
+        name: JobScrapperSchedulerZillow
+        rate: cron(0 11 * 2 ? *)
+        enabled: true
+        input:
+          receiver: "+15153055694"
+          sender: "123456789"
+          message: "from scheduler"
+    - http:
+        method: POST
+        path: /zillow
+        cors: true               
   Netflix:
     handler: handler.sendSMS
     memorySize: 1024

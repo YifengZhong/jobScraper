@@ -141,7 +141,7 @@ exports.sendSMS = async (event, context) => {
       return `${index}. title:${job.title}.\nURL: ${job.url}.`;
     })
 
-    const message = `Today has ${todayJb.length} positions. new jobs are:\n\n${normalizedJobs.join('\n\n')}`;
+    const message = `Today Netflix has ${todayJb.length} positions. new jobs are:\n\n${normalizedJobs.join('\n\n')}`;
     console.log("Sending message", message, "to receiver", receiver);
     await sns.publish({
       Message: message,
