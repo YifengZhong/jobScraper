@@ -68,7 +68,7 @@ exports.sendSMS = async (event, context) => {
 
   try {
     const page = await browser.newPage();
-    await page.goto('https://jobs.netflix.com/search?q=full%20stack%20&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California',
+    await page.goto('https://jobs.netflix.com/search?q=javascript&page=1&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California',
       { waitUntil: 'networkidle0' });
 
     let todayJb = [];

@@ -80,7 +80,7 @@ functions:
     events:
     - schedule:
         name: JobScrapperSchedulerGoogle
-        rate: cron(0 11 * 1 ? *)
+        rate: cron(0 12 * * ? *)
         enabled: true
         input:
           receiver: "+15153055694"
@@ -98,7 +98,7 @@ functions:
     events:
     - schedule:
         name: JobScrapperSchedulerZillow
-        rate: cron(0 11 * 2 ? *)
+        rate: cron(0 10 * * ? *)
         enabled: true
         input:
           receiver: "+15153055694"
@@ -107,7 +107,25 @@ functions:
     - http:
         method: POST
         path: /zillow
-        cors: true               
+        cors: true
+  Uber:
+    handler: uber.entry
+    memorySize: 1024
+    timeout: 30
+    tags:
+    events:
+    - schedule:
+        name: JobScrapperSchedulerUber
+        rate: cron(0 11 * * ? *)
+        enabled: true
+        input:
+          receiver: "+15153055694"
+          sender: "123456789"
+          message: "from scheduler"
+    - http:
+        method: POST
+        path: /uber
+        cors: true                        
   Netflix:
     handler: handler.sendSMS
     memorySize: 1024
