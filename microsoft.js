@@ -42,41 +42,42 @@ exports.entry = async (event, context) => {
 
   try {
     const page = await browser.newPage();
-    //const mypromise = page.waitForNavigation({ timeout: 30000, waitUntil: 'networkidle0' });
     await page.goto('https://careers.microsoft.com/us/en/search-results?keywords=javascript',
       { waitUntil: 'networkidle0' });
-    const buttons = page.$$('.facet-menu');
-    Array.from(buttons).map(async ele => {
-      console.log('in click');
-      await page.click(ele);
-    })
     let todayJb = [];
     while (true) {
       const obj = await page.evaluate(() => {
         //From here there is no log output
+        const buttons = document.querySelectorAll('.facet-menu');
+        Array.from(buttons).map(x => x.click());
         //USA
-        if (!document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(3) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(1) > label > input').checked) {
-          document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(3) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(1) > label > input').click();
+        const country = document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(3) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(1) > label > input');
+        if (country && !country.checked) {
+          country.click();
         }
         //Engineering
-        if (!document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(6) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(1) > label > input').checked) {
-          document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(6) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(1) > label > input').click();
+        const engineering = document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(6) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(1) > label > input');
+        if (engineering && !engineering.checked) {
+          engineering.click();
         }
         //Despline
-        if (!document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(7) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(1) > label > input').checked) {
-          document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(7) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(1) > label > input').click();
+        const despline1 = document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(7) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(1) > label > input');
+        if (despline1 && !despline1.checked) {
+          despline1.click();
         }
-        if (!document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(7) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(2) > label > input').checked) {
-          document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(7) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(2) > label > input').click();
+        const despline2 = document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(7) > div.panel-collapse.collapse.in > div > div.phs-facet-results > ul > li:nth-child(2) > label > input');
+        if (despline2 && !despline2.checked) {
+          despline2.click();
         }
         //Role type
-        if (!document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(9) > div.panel-collapse.collapse.in > div > div > ul > li:nth-child(1) > label > input').checked) {
-          document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(9) > div.panel-collapse.collapse.in > div > div > ul > li:nth-child(1) > label > input').click();
+        const roleType = document.querySelector('body > div.ph-page > div > div.container > div.row > div.col-md-4.col-sm-5.addition-padding > section:nth-child(1) > div > div > div.au-target.phs-filter-panels.show > div:nth-child(9) > div.panel-collapse.collapse.in > div > div > ul > li:nth-child(1) > label > input');
+        if (roleType && !roleType.checked) {
+          roleType.click();
         }
         const searchResults = document.querySelectorAll('.jobs-list-item');
         const jobs = Array.from(searchResults).map(x => {
           const title = x.querySelector('.job-title').innerText.trim();
-          const url = x.querySelector('div > ul > li:nth-child(1) > div > div.left-block.col-xs-12.col-md-10 > div > a').href;
+          const url = x.querySelector('div > div.left-block.col-xs-12.col-md-10 > div > a').href;
           return { title, url };
         });
         let hasNextInternal = true;
@@ -92,7 +93,7 @@ exports.entry = async (event, context) => {
       todayJb = [...todayJb, ...obj.jobs];
       console.log(todayJb);
       if (obj.hasNextInternal) {
-        await sleep(4000);
+        await sleep(3000);
       } else {
         break;
       }
@@ -114,8 +115,7 @@ exports.entry = async (event, context) => {
       const yesterdayJobs = allRecords.Items[0].jobs;
       newJob = getNewJob(yesterdayJobs, todayJb);
       // Delete old jobs
-      // const jobsToDelete = allRecords.Items[0] ? allRecords.Items[0].listingId : null;
-      // if (jobsToDelete) {
+
       await dynamo.delete({
         TableName: 'scrapperjobs',
         Key: {
@@ -134,8 +134,7 @@ exports.entry = async (event, context) => {
         }
       }).promise();
     }
-    //if (newJob.length !== 0) {
-    //send SMS here
+
     const receiver = "+15153055694";
     const sender = "aws";
     const normalizedJobs = newJob.map((job, index) => {

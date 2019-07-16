@@ -129,7 +129,7 @@ functions:
   Microsoft:
     handler: microsoft.entry
     memorySize: 1024
-    timeout: 30
+    timeout: 31
     tags:
     events:
     - schedule:
