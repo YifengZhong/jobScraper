@@ -129,7 +129,7 @@ functions:
   Microsoft:
     handler: microsoft.entry
     memorySize: 1024
-    timeout: 31
+    timeout: 30
     tags:
     events:
     - schedule:
@@ -147,7 +147,7 @@ functions:
   Netflix:
     handler: handler.sendSMS
     memorySize: 1024
-    timeout: 60
+    timeout: 25
     tags:
     events:
     - schedule:
@@ -161,7 +161,25 @@ functions:
     - http:
         method: POST
         path: /netfix
-        cors: true        
+        cors: true 
+  LinkedIn:
+    handler: linkedIn.entry
+    memorySize: 1024
+    timeout: 30
+    tags:
+    events:
+    - schedule:
+        name: JobScrapperSchedulerLinkedIn
+        rate: cron(15 11 * * ? *)
+        enabled: true
+        input:
+          receiver: "+15153055694"
+          sender: "123456789"
+          message: "from scheduler"
+    - http:
+        method: POST
+        path: /linkedin
+        cors: true               
 resources:
   Resources:
     scrapperjobs:

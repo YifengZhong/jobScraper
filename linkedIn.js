@@ -1,17 +1,13 @@
 'use strict';
 const AWS = require('aws-sdk');
 const sns = new AWS.SNS();
-const successResponsePdf = (data) => {
-  return {
-    statusCode: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Content-Type': 'application/pdf',
-    },
-    isBase64Encoded: true,
-    body: data,
-  };
-};
+
+function getNewJob(yesterdayJobs, result) {
+  const yesterdayJobsUrl = yesterdayJobs.map(job => job.url);
+  return result.filter(job => {
+    return !yesterdayJobsUrl.includes(job.url)
+  });
+}
 const successRespond = (code, body) => {
   const response = {
     statusCode: code,
@@ -35,32 +31,7 @@ const errorResponse = (statusCode, message) => {
     }),
   };
 };
-module.exports.hello = (event, context, callback) => {
-  const s3 = new AWS.S3({ apiVersion: '2006-03-01' });
-  const params = {
-    Bucket: 'pdftest-yifeng',
-    Key: 'Confirmation895498.pdf',
-  };
-  try {
-    s3.getObject(params, function (err, data) {
-      if (err) {
-        throw new Error('Error Fetching Data release');
-      }
-      console.log("get pdf");
-      callback(null, successResponsePdf(data.Body.toString('base64')));
-      return;
-    });
-  } catch (err) {
-    console.log('error in getGrowerById: ', err);
-    return errorResponse(500, 'Error Fetching Grower');
-  }
-};
-function getNewJob(yesterdayJobs, result) {
-  const yesterdayJobsUrl = yesterdayJobs.map(job => job.url);
-  return result.filter(job => !yesterdayJobsUrl.includes(job.url));
-}
-
-exports.sendSMS = async (event, context) => {
+exports.entry = async (event, context) => {
   const puppeteerLambda = require('puppeteer-lambda');
   const browser = await puppeteerLambda.getBrowser({
     headless: true
@@ -68,39 +39,39 @@ exports.sendSMS = async (event, context) => {
 
   try {
     const page = await browser.newPage();
-    await page.goto('https://jobs.netflix.com/search?q=javascript&page=1&location=Los%20Gatos%2C%20California~Los%20Angeles%2C%20California',
+    await page.goto('https://www.linkedin.com/jobs/search/?f_C=1337&keywords=javascript&location=Worldwide&locationId=OTHERS.worldwide',
       { waitUntil: 'networkidle0' });
 
     let todayJb = [];
     while (true) {
       const obj = await page.evaluate(() => {
         //From here there is no log output
-        const sections = document.getElementsByClassName('css-ualdm4 e1rpdjew3');
-        const jb1 = Array.from(sections).map(x => {
-          const url = x.getElementsByTagName('a')[0].href;
-          const title = x.getElementsByTagName('h4')[0].innerText;
+        const searchResult = document.querySelectorAll('.artdeco-list__item');
+        const jb1 = Array.from(searchResult).map(x => {
+          x.scrollIntoView();
+          const url = x.querySelector('h3 > a').href;
+          const title = x.querySelector('h3').innerText.trim();
           return { title, url };
         });
         let hasNextInternal = true;
-        const nextHref = document.querySelector('#__next > div > main > section > div > div > div > div > div.css-v8ggj5.e1j2lb9k1 > div.css-1l4w6pd.e1wiielh2 > div > a:nth-child(3)');
-        if (nextHref.getAttribute('href')) {
+        const nextHref =
+          document.querySelector('#ember4 > div.application-outlet > div.authentication-outlet > section.job-search-ext.job-search-ext--two-pane > div.jobs-search-two-pane__wrapper.jobs-search-two-pane__wrapper--two-pane > div > div > div.jobs-search-two-pane__results.display-flex > div.jobs-search-results.jobs-search-results--is-two-pane > div > section > artdeco-pagination > ul > li:nth-child(2) > button');
+        if (nextHref) {
           nextHref.click();
         } else {
           hasNextInternal = false;
         }
-        return { jb1, hasNextInternal };
+        return { jb1, hasNextInternal, url: nextHref.href };
         //untill here no log output
       });
       todayJb = [...todayJb, ...obj.jb1];
-      console.log('hasNextInternal', obj.hasNextInternal)
       if (obj.hasNextInternal) {
-        await page.waitForNavigation({ timeout: 30000, waitUntil: 'networkidle0' });
+        await sleep(2000);
       } else {
         break;
       }
     }
 
-    console.log('before dynamo');
     const dynamo = new AWS.DynamoDB.DocumentClient()
     const allRecords = await dynamo.scan({
       TableName: 'scrapperjobs',
@@ -109,7 +80,7 @@ exports.sendSMS = async (event, context) => {
         "#listingId": "listingId",
       },
       ExpressionAttributeValues: {
-        ":eq": 'Netflix'
+        ":eq": 'LinkedIn'
       }
     }).promise();
     let newJob = todayJb;
@@ -122,7 +93,7 @@ exports.sendSMS = async (event, context) => {
       await dynamo.delete({
         TableName: 'scrapperjobs',
         Key: {
-          listingId: 'Netflix'
+          listingId: 'LinkedIn'
         }
       }).promise();
       // }
@@ -132,7 +103,7 @@ exports.sendSMS = async (event, context) => {
       await dynamo.put({
         TableName: 'scrapperjobs',
         Item: {
-          listingId: 'Netflix',
+          listingId: 'LinkedIn',
           jobs: todayJb
         }
       }).promise();
@@ -145,7 +116,7 @@ exports.sendSMS = async (event, context) => {
       return `${index}. title:${job.title}.\nURL: ${job.url}.`;
     })
 
-    const message = `Today Netflix has ${todayJb.length} positions. new jobs are:\n\n${normalizedJobs.join('\n\n')}`;
+    const message = `Today LinkedIn has ${todayJb.length} positions. new jobs are:\n\n${normalizedJobs.join('\n\n')}`;
     console.log("Sending message", message, "to receiver", receiver);
     await sns.publish({
       Message: message,
@@ -161,7 +132,6 @@ exports.sendSMS = async (event, context) => {
       },
       PhoneNumber: receiver
     }).promise();
-    //}
     return successRespond(200, newJob);
   } catch (error) {
     console.log(error);
