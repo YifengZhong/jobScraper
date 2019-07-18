@@ -141,7 +141,10 @@ exports.entry = async (event, context) => {
       return `${index}. title:${job.title}.\nURL: ${job.url}.`;
     })
 
-    const message = `Today Microsoft has ${todayJb.length} positions. new jobs are:\n\n${normalizedJobs.join('\n\n')}`;
+    const message = `Microsoft:${todayJb.length}\n${normalizedJobs.join('\n')}`;
+    if (message.length > 280) {
+      message = `Microsoft has many new jobs published.`
+    }
     console.log("Sending message", message, "to receiver", receiver);
     await sns.publish({
       Message: message,

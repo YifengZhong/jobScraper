@@ -1,7 +1,7 @@
 'use strict';
 const AWS = require('aws-sdk');
 const sns = new AWS.SNS();
-
+const scrollPageToBottom = require('puppeteer-autoscroll-down');
 function getNewJob(yesterdayJobs, result) {
   const yesterdayJobsUrl = yesterdayJobs.map(job => job.url);
   return result.filter(job => {
@@ -43,7 +43,14 @@ exports.entry = async (event, context) => {
       { waitUntil: 'networkidle0' });
 
     let todayJb = [];
+    await page.setViewport({
+      width: 1200,
+      height: 800
+    });
+    const lastPosition = await scrollPageToBottom(page);
+    console.log('lastPosition', lastPosition);
     while (true) {
+
       const obj = await page.evaluate(() => {
         //From here there is no log output
         const searchResult = document.querySelectorAll('.artdeco-list__item');
@@ -108,7 +115,6 @@ exports.entry = async (event, context) => {
         }
       }).promise();
     }
-    //if (newJob.length !== 0) {
     //send SMS here
     const receiver = "+15153055694";
     const sender = "aws";
@@ -116,22 +122,25 @@ exports.entry = async (event, context) => {
       return `${index}. title:${job.title}.\nURL: ${job.url}.`;
     })
 
-    const message = `Today LinkedIn has ${todayJb.length} positions. new jobs are:\n\n${normalizedJobs.join('\n\n')}`;
+    const message = `LinkedIn:${todayJb.length}\n${normalizedJobs.join('\n\n')}`;
+    if (message.length > 280) {
+      message = `LinkedIn has many new jobs published.`
+    }
     console.log("Sending message", message, "to receiver", receiver);
-    await sns.publish({
-      Message: message,
-      MessageAttributes: {
-        'AWS.SNS.SMS.SMSType': {
-          DataType: 'String',
-          StringValue: 'Promotional'
-        },
-        'AWS.SNS.SMS.SenderID': {
-          DataType: 'String',
-          StringValue: sender
-        },
-      },
-      PhoneNumber: receiver
-    }).promise();
+    // await sns.publish({
+    //   Message: message,
+    //   MessageAttributes: {
+    //     'AWS.SNS.SMS.SMSType': {
+    //       DataType: 'String',
+    //       StringValue: 'Promotional'
+    //     },
+    //     'AWS.SNS.SMS.SenderID': {
+    //       DataType: 'String',
+    //       StringValue: sender
+    //     },
+    //   },
+    //   PhoneNumber: receiver
+    // }).promise();
     return successRespond(200, newJob);
   } catch (error) {
     console.log(error);

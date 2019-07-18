@@ -145,7 +145,10 @@ exports.sendSMS = async (event, context) => {
       return `${index}. title:${job.title}.\nURL: ${job.url}.`;
     })
 
-    const message = `Today Netflix has ${todayJb.length} positions. new jobs are:\n\n${normalizedJobs.join('\n\n')}`;
+    const message = `Netflix:${todayJb.length}\n${normalizedJobs.join('\n')}`;
+    if (message.length > 280) {
+      message = `Netflix has many new jobs published.`
+    }
     console.log("Sending message", message, "to receiver", receiver);
     await sns.publish({
       Message: message,
